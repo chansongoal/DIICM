@@ -130,7 +130,7 @@ def main(args):
 
     if args.eval_only:
         # debug gaocs
-        register_coco_instances("coco_minVal2014_5000_Faster_Res50_C4_1.0_0.2_quality100", {}, "/home/gaocs/dataset/COCO/json/instances_minVal2014_png.json", "/home/gaocs/projects/ICM-DIICM/Data/transformed/inferred/MaskRCNN_Res101_FPN_0.5/1.0_0.2")
+        register_coco_instances("coco_minVal2014_5000_Keypoints_Res50_FPN_1.0_0.8_quality100", {}, "/gdata/gaocs/dataset/COCO/json/keypoints_minVal2014_png.json", "/gdata1/gaocs/Data_DIICM/transformed/inferred/MaskRCNN_Res101_FPN_0.5/1.0_0.8")
 
         model = Trainer.build_model(cfg)
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(

@@ -140,9 +140,3 @@ dmypy.json
 
 # PyCharm
 .idea/
-
-# 9.99
-coding/CompressAI/compressai/.nfs*
-err_out/
-job/
-coding/CompressAI/docker/

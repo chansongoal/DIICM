@@ -37,7 +37,7 @@ MODEL:
 
 DATASETS:
   TRAIN: ("keypoints_coco_2017_train",)
-  TEST: ("coco_minVal2014_5000_Keypoints_Res50_FPN_1.0_0.2_100_100", )
+  TEST: ("coco_minVal2014_5000_Keypoints_Res50_FPN_1.0_0.8_quality100", )
   
 SOLVER:
   IMS_PER_BATCH: 16
@@ -47,6 +47,6 @@ SOLVER:
 
 INPUT:
   MIN_SIZE_TRAIN: (640, 672, 704, 736, 768, 800)
-OUTPUT_DIR: /data/gaocs/Understanding_Detection/json/transformed/label/1.0_0.2_100_100/KeypointsRes50FPN/
-OUTPUT_DIR: /data/gaocs/Understanding_Detection/json/transformed/label/1.0_0.2_100_100/KeypointsRes50FPN/
+OUTPUT_DIR: /gdata1/gaocs/Data_DIICM/mAP/transformed/inferred/MaskRCNN_Res101_FPN_0.5/1.0_0.8/
+OUTPUT_DIR: /gdata1/gaocs/Data_DIICM/mAP/transformed/inferred/MaskRCNN_Res101_FPN_0.5/1.0_0.8/
 VERSION: 2

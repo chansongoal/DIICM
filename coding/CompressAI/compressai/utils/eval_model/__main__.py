@@ -54,6 +54,9 @@ from compressai.zoo import image_models as pretrained_models
 from compressai.zoo.image import model_architectures as architectures
 from compressai.zoo.image_vbr import model_architectures as architectures_vbr
 
+#gcs
+import os
+
 torch.backends.cudnn.deterministic = True
 torch.set_num_threads(1)
 
@@ -245,6 +248,7 @@ def eval_model(
         C, H, W = x.shape; thres = 160
         if H <=thres or W<=thres:
             print(str(filepath).split('/')[-1], C, H, W)
+
         if not entropy_estimation:
             if args["half"]:
                 model = model.half()
@@ -271,7 +275,10 @@ def eval_model(
                 inputdir
             )
             output_subdir.mkdir(parents=True, exist_ok=True)
-            image_metrics_path = output_subdir / f"{filepath.stem}-{trained_net}.json"
+            #gcs
+            json_path = f"{output_subdir}/json"; os.makedirs(json_path, exist_ok=True)
+            image_metrics_path = Path(f"{json_path}/{filepath.stem}-{trained_net}.json")
+            # image_metrics_path = output_subdir / f"{filepath.stem}-{trained_net}.json"
             with image_metrics_path.open("wb") as f:
                 output = {
                     "source": filepath.stem,
@@ -281,7 +288,7 @@ def eval_model(
                 }
                 f.write(json.dumps(output, indent=2).encode())
             #gcs, save rec image
-            rec_image_dir = Path(f"{output_subdir}_image"); rec_image_dir.mkdir(parents=True, exist_ok=True)
+            rec_image_dir = f"{output_subdir}/image"; os.makedirs(rec_image_dir, exist_ok=True)
             rec_image_path = f"{rec_image_dir}/{filepath.stem}.png"
             # os.makedirs(f"{output_subdir}_image", exist_ok=True)
             rec_img = rec_img.squeeze(0).cpu()
