@@ -65,7 +65,8 @@ def Faster_Res50_C4(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_net
     ConfigModification(configFileName, DatasetName, LogPath, alpha, quality)
     train_net_Modification(TrainFileName, DatasetName, JsonName, DatasetPath)
 
-    log_name = f"{LogPath}/{DatasetNamePrefix}_{processing_config}_{mask_type}_{mask_network}_{NetworkConfig}_1.0_{alpha}_quality{quality}.txt 2>&1"
+    if processing_config == 'compressed': log_name = f"{LogPath}/{DatasetNamePrefix}_{processing_config}_{NetworkConfig}_quality{quality}.txt 2>&1"
+    elif processing_config == 'transformed_compressed': log_name = f"{LogPath}/{DatasetNamePrefix}_{processing_config}_{mask_type}_{mask_network}_{NetworkConfig}_1.0_{alpha}_quality{quality}.txt 2>&1"
     eval_para = 'cd /ghome/gaocs/DIICM/machines/detectron2/; \
                     python3 train_net.py \
                     --config-file ./configs/faster_rcnn_R_50_C4_1x.yaml \
@@ -85,7 +86,8 @@ def Mask_Res50_C4(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_netwo
     ConfigModification(configFileName, DatasetName, LogPath, alpha, quality)
     train_net_Modification(TrainFileName, DatasetName, JsonName, DatasetPath)
 
-    log_name = f"{LogPath}/{DatasetNamePrefix}_{processing_config}_{mask_type}_{mask_network}_{NetworkConfig}_1.0_{alpha}_quality{quality}.txt 2>&1"
+    if processing_config == 'compressed': log_name = f"{LogPath}/{DatasetNamePrefix}_{processing_config}_{NetworkConfig}_quality{quality}.txt 2>&1"
+    elif processing_config == 'transformed_compressed': log_name = f"{LogPath}/{DatasetNamePrefix}_{processing_config}_{mask_type}_{mask_network}_{NetworkConfig}_1.0_{alpha}_quality{quality}.txt 2>&1"
     eval_para = 'cd /ghome/gaocs/DIICM/machines/detectron2/; \
                     python3 train_net.py \
                     --config-file ./configs/mask_rcnn_R_50_C4_1x.yaml \
@@ -105,7 +107,8 @@ def Keypoints_Res50_FPN(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask
     ConfigModification(configFileName, DatasetName, LogPath, alpha, quality)
     train_net_Modification(TrainFileName, DatasetName, JsonName, DatasetPath)
 
-    log_name = f"{LogPath}/{DatasetNamePrefix}_{processing_config}_{mask_type}_{mask_network}_{NetworkConfig}_1.0_{alpha}_quality{quality}.txt 2>&1"
+    if processing_config == 'compressed': log_name = f"{LogPath}/{DatasetNamePrefix}_{processing_config}_{NetworkConfig}_quality{quality}.txt 2>&1"
+    elif processing_config == 'transformed_compressed': log_name = f"{LogPath}/{DatasetNamePrefix}_{processing_config}_{mask_type}_{mask_network}_{NetworkConfig}_1.0_{alpha}_quality{quality}.txt 2>&1"
     eval_para = 'cd /ghome/gaocs/DIICM/machines/detectron2/; \
                     python3 train_net.py \
                     --config-file ./configs/keypoints_rcnn_R_50_FPN_1x.yaml \
@@ -140,12 +143,19 @@ def main(args):
             if processing_config == 'transformed':
                 DatasetPath = f"{data_root}/{processing_config}/{mask_type}/{mask_network}/1.0_{alpha}"
                 LogPath = f"{data_root}/mAP/{processing_config}/{mask_type}/{mask_network}/1.0_{alpha}"
-            elif processing_config == 'compressed':
+            elif processing_config == 'compressed' and arch == 'cheng2020_anchor':
                 DatasetPath = f"{data_root}/{processing_config}/{arch}/quality{quality}/image"
                 LogPath = f"{data_root}/mAP/{processing_config}/{arch}/quality{quality}"
-            elif processing_config == 'transformed_compressed':
+            elif processing_config == 'transformed_compressed' and arch == 'cheng2020_anchor':
                 DatasetPath = f"{data_root}/{processing_config}/{arch}/{mask_type}/{mask_network}/1.0_{alpha}/quality{quality}/image"
                 LogPath = f"{data_root}/mAP/{processing_config}/{arch}/{mask_type}/{mask_network}/1.0_{alpha}/quality{quality}"
+            elif processing_config == 'compressed' and arch == 'vtm_anchor':
+                DatasetPath = f"{data_root}/{processing_config}/{arch}/qp{quality}/rec_png"
+                LogPath = f"{data_root}/mAP/{processing_config}/{arch}/qp{quality}"
+            elif processing_config == 'transformed_compressed' and arch == 'vtm_anchor':
+                DatasetPath = f"{data_root}/{processing_config}/{arch}/{mask_type}/{mask_network}/1.0_{alpha}/qp{quality}/rec_png"
+                LogPath = f"{data_root}/mAP/{processing_config}/{arch}/{mask_type}/{mask_network}/1.0_{alpha}/qp{quality}"
+
 
             if not os.path.exists(LogPath): os.makedirs(LogPath, exist_ok=True)
 
@@ -158,7 +168,7 @@ if __name__ == "__main__":
     parser.add_argument('--mask_type', type=str, choices=['inferred', 'label', 'original'], default='inferred', help='Type of mask used')
     parser.add_argument('--mask_network', type=str, default='MaskRCNN_Res101_FPN_0.5', help='Mask network used (if applicable)')
     parser.add_argument('--processing_config', type=str, choices=['transformed', 'compressed', 'transformed_compressed'], default='transformed', help='Processing configuration')
-    parser.add_argument('--arch', type=str, default='cheng2020-anchor', help='Model architecture')
+    parser.add_argument('--arch', type=str, default='cheng2020_anchor', help='Model architecture')
     parser.add_argument('--alpha_all', type=float, nargs='+', default=[0.2, 0.5, 0.8], help='List of alpha values')
     parser.add_argument('--quality_all', type=int, nargs='+', default=[1, 2, 3, 4, 5, 6], help='List of quality levels')
     

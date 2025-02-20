@@ -1,0 +1,19 @@
+#PBS -N infer_0.5_6
+#PBS -o /ghome/gaocs/DIICM/err_out/infer_0.5_6.out
+#PBS -e /ghome/gaocs/DIICM/err_out/infer_0.5_6.err
+#PBS -l nodes=1:gpus=1:A,walltime=350:00:00
+#PBS -r y
+cd $PBS_O_WORKDIR
+echo Time is `date`
+echo Directory is $PWD
+echo This job runs on following nodes and gpus:
+cat $PBS_NODEFILE
+cat $PBS_GPUFILE
+
+#startdocker -u " -v /gdata/gaocs:/gdata/gaocs  -v /gdata1/gaocs:/gdata1/gaocs -v /gdata2/gaocs:/gdata2/gaocs " -P /ghome/gaocs  -s "/ghome/gaocs/DIICM/job/cheng2020.sh"     bit:5000/gaocs_compressai_llama3_container:2.1.1-cuda12.1-cudnn8-runtime
+
+startdocker -u " -v /gdata/gaocs:/gdata/gaocs  -v /gdata1/gaocs:/gdata1/gaocs -v /gdata2/gaocs:/gdata2/gaocs " \
+    -P /ghome/gaocs \
+    -s "/ghome/gaocs/DIICM/job/cheng2020.sh /gdata1/gaocs/Data_DIICM inferred MaskRCNN_Res101_FPN_0.5 0.5 cheng2020-anchor 6" \
+    bit:5000/gaocs_compressai_llama3_container:2.1.1-cuda12.1-cudnn8-runtime
+
