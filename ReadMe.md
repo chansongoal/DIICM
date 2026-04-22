@@ -1,167 +1,260 @@
-# Introduction
+# DIICM: Discrimination-Inspired Image Coding for Machines
 
-This project is the official implementation of the paper titled **“[DT-UFC: Universal Large Model Feature Coding via Peaky-to-Balanced Distribution Transformation](https://arxiv.org/abs/2506.16495)”**. 
+## Overview
+Official implementation of the paper **“DIICM: Discrimination-Inspired Image Coding for Machines.”** This repository provides the code used to run the DIICM pipeline with multiple codecs and machine-vision tasks.
 
-**"Universal Feature Coding"** is a key branch of the field of **"Coding for Machines"**, focusing on scenarios where a neural network is divided into multiple parts and deployed across different devices. In such cases, the intermediate features are encoded and transmitted between devices. The primary goal of feature coding is to minimize the bitrate under a certain constraint of task accuracy or maxmize the task accuracy under a certain constraint of bitrate.
+DIICM studies **image coding for machines (ICM)** from a machine-vision perspective. Instead of only minimizing the gap between original and reconstructed objects, DIICM also considers **inter-object discrimination**, which is important for localization-oriented tasks such as object detection and instance segmentation.
 
-We divide the source codes into two folders: *coding and machines*. 
-The *“coding”* folder includes codes related to feature coding and the *“machines”* folder includes codes related to the machines algorithms (feature extraction and task evaluation).
+DIICM is a **Task-agnostic**, **Codec-agnostic**, and **Plug-and-Play** ICM method, which achieves 28%–43% BD-BR reduction across three machine vision tasks and three codecs JPEG, Cheng2020, and VVC. In addition, DIICM is the first paper that conducts comparisons with MPEG-VCM and demonstrates its superiority on bitrate, task accuracy, and reconstruction quality tradeoff.
 
-<p align="center">
-  <img src="framework.png" alt="CFQA Framework" width="720">
-</p>
+<!-- ## Method Summary
 
-# Key Features
+The DIICM framework contains four stages:
 
-- ## Support 3 large models and 1 CNN model
-    - **LLaMA3:** Common Sense Reasoning task
-    - **DINOv2:** Semantic Segmentation task
-    - **SD3:** Text-to-Image Synthesis task
-    - **ResNet50:** Image Classification task
+1. **Image Forward Transform**  
+   Detect OOIs and apply the DIICM transform only to OONIs.
+2. **Image Coding**  
+   Compress the transformed image using any off-the-shelf codec.
+3. **Image Understanding**  
+   Run downstream machine-vision analysis on the reconstructed image.
+4. **Image Inverse Transform**  
+   Optionally enhance decoded images for better perceptual quality.
+
+The forward transform is derived under a Gaussian assumption and can be written as:
+
+```text
+x' = alpha * x + (1 - alpha) * mu
+```
+
+where `alpha < 1` compresses the variance of OONIs while preserving their mean. In practice, the repository evaluates several shared transform coefficients such as `alpha = 0.2, 0.5, 0.8`. -->
+
+## Environment and Dependencies
+
+This repository combines code from several toolchains. A full run typically requires:
+
+- Python 3.x
+- PyTorch
+- NumPy
+- Pillow
+- Detectron2
+- CompressAI for the Cheng2020 experiments
+- VTM software for the VVC experiments
+
+Because the repository integrates multiple external frameworks, you will usually need to prepare the environment for each backend separately.
+
+### Recommended setup
+
+1. Create a Python environment for DIICM.
+2. Install common Python dependencies such as `numpy`, `pillow`, and `torch`.
+3. Install Detectron2 following its official instructions.
+4. Install the local CompressAI version in editable mode:
+
+```bash
+cd coding/CompressAI
+pip install -e .
+```
+
+5. Prepare your VTM executable environment if you plan to run VVC experiments.
+
+## Data Preparation
+
+From the paper, the main experiments use:
+
+- **COCO minival2017** for general-purpose comparisons,
+- **TVD** and **SFU** datasets for preprocessing comparisons.
+
+The code also assumes that **OOI masks** are available, either:
+
+- inferred from an object detector / segmenter, or
+- generated from reconstructed images for inverse transform.
+
+In the current codebase, many dataset, mask, and output paths are **hardcoded**. Before running experiments, you should carefully update the paths in scripts such as:
+
+- `transform/transform.py`
+- `coding/JPEG/jpeg.py`
+- `rd_analysis/*.py`
+
+## Repository Structure
+
+```text
+DIICM/
+├── coding/
+│   ├── CompressAI/          # Learned image compression (e.g., Cheng2020-related pipeline)
+│   ├── JPEG/                # JPEG anchor compression scripts
+│   └── VTM/                 # VVC / VTM batch scripts and utilities
+├── job/                     # Cluster job submission scripts
+├── machines/
+│   └── detectron2/          # Detectron2-based training/evaluation code and configs
+├── rd_analysis/             # RD / RA metric computation and plotting scripts
+├── transform/               # Forward transform and inverse transform code
+└── utils/                   # Dataset processing, JSON conversion, visualization, evaluation helpers
+```
+
+## Pipeline and Key Components
+
+The repository follows the DIICM pipeline from preprocessing to evaluation. The main components are organized according to the practical execution flow below.
+
+### 1. OOI Localization and Machine-Vision Evaluation
+
+DIICM first identifies objects of interest (OOIs), and later evaluates downstream machine-vision performance on reconstructed images. These functions are mainly implemented under:
+
+```bash
+machines/detectron2/
+```
+
+Notable files include:
+
+- `detectron2_eval_merged.py`
+- `train_net.py`
+- `configs/`
+
+This part is used for tasks such as:
+
+- object detection,
+- instance segmentation,
+- person keypoint detection.
+
+In a typical run, this module is used twice: first to obtain OOI masks or localization results for preprocessing, and then to evaluate machine performance after compression and reconstruction.
+
+### 2. Forward and Inverse Transform
+
+After OOI regions are identified, DIICM applies the forward transform to OONIs and, when needed, applies an inverse transform after decoding. The core implementation is in:
+
+```bash
+transform/transform.py
+```
+
+This script contains both:
+
+- the **forward transform** used before coding, and
+- the **inverse transform** used after reconstruction for perceptual enhancement.
+
+In practice, you usually edit paths and transform settings in this file, then run:
+
+```bash
+python transform/transform.py
+```
+
+### 3. Image Coding Backends
+
+The transformed images can then be compressed by different codecs. The repository includes three backends corresponding to the paper.
+
+#### JPEG
+
+```bash
+coding/JPEG/jpeg.py
+```
+
+Used for JPEG anchor compression and DIICM-based transformed-image compression.
+
+#### Cheng2020 / CompressAI
+
+```bash
+coding/CompressAI/run_batch.py
+```
+
+Used for learned image compression experiments based on the local CompressAI branch included in this repository.
+
+Typical usage:
+
+```bash
+cd coding/CompressAI
+python run_batch.py
+```
+
+#### VVC / VTM
+
+```bash
+coding/VTM/
+```
+
+Contains VVC / VTM-related scripts and helper tools, such as:
+
+- `vtm_anchor.bat`
+- `vtm_anchor_transformed.bat`
+- `DIICM.bat`
+- `DIICM_transformed.bat`
+- `png2yuv.py`
+- `get_png_info.py`
+
+You can choose one backend depending on which experiments you want to reproduce.
+
+### 4. RD / RA Analysis
+
+After compression and downstream evaluation, rate-distortion and rate-accuracy results can be computed under:
+
+```bash
+rd_analysis/
+```
+
+<!-- Examples include:
+
+- `bpp_compute.py`
+- `psnr.py`
+- `psnr_inverse.py`
+- `rd_jpeg.py`
+- `rd_cheng2020.py`
+- `rd_vtm.py`
+- `rd_plot.py` -->
+
+These scripts are used to compute bitrate, PSNR, and to generate RD / RA comparisons reported in the paper.
+
+### 5. Utilities
+
+Additional preprocessing, conversion, and visualization tools are placed under:
+
+```bash
+utils/
+```
+
+These scripts support dataset preparation, COCO-style annotation processing, result conversion, visualization, and other experiment utilities.
 
 
-- ## Include 2 Learning-based Codecs
-    - **Hyperprior** 
-    - **ELIC**
-
-# Environments Set Up
-
-## Coding
-
-- **CompressAI** 
-
-    - Step 1: build the docker image from *“docker/dockerfile_compressai_llama3”*. For example, a docker image named *“gaocs/compressai_llama3:2.0.0-cuda11.7-cudnn8-runtime”* will be built by running:
-
-        `docker build -t gaocs/compressai_llama3:2.0.0-cuda11.7-cudnn8-runtime`
-
-    - Step 2: Enter a docker container and run the command below to install CompressAI in editable mode:
-
-        `cd coding/CompressAI; pip install -e .`
-
-    Please note that the docker image only provides the running environment. We modified the original CompressAI library and thus the local installation is required. The local installation takes time to solve the dependencies. 
-
-## Machines
-
-- **DINOv2:** build the docker image from *“docker/dockerfile_dinov2”*.
-
-- **Llama3:** build the docker image from *“docker/dockerfile_compressai_llama3”*. Then run:
-
-    `cd machines/llama3/transformers; pip install -e .`
-
-- **Stable Diffusion 3:** build the docker image from *“docker/dockerfile_sd3”*. Then run:
-
-    `cd machines/sd3/diffuers; pip install -e .`
-
-    Please note that the feature extraction depends on specific pytorch versions. To obtain identical features, please follow the environmental setups.
-
-# Usage Guidelines
-
-We divide the source codes into two folders: *coding and machines*. 
-The *“coding”* folder includes codes related to feature coding and the *“machines”* folder includes codes related to the machines algorithms (feature extraction and task evaluation).
-
-## Coding
-
-- ### Distribution Transformation
-
-    Config the parameters accordingly and derive the nonlinear transform mapping through:
-
-    `cd coding/transform; python nonlinear_transform.py`
-
-- ### Codec Training
-
-    Config the parameters accordingly and generate the transformed training data from original extracted features using the below command. Generate training data before training saves the training time. For the original feature extraction, please refer to "[chansongoal/LaMoFC](https://github.com/chansongoal/LaMoFC)"
-
-    `cd coding/transform; python generate_data.py`
-    
-    Set up the configurations and arrange the corresponding folders. Then run:
-
-    `cd coding/CompressAI/; python run_batch.py`
-
-    We have organized the training and inference processes in one single file *“run_batch.py”*. This file will generate two commands for training *(train_cmd)* and inference *(eval_cmd)* respectively. The validation loss curves will also be plotted after training. 
-
-## Machines
-
-The feature extraction and task evaluation process use the same codes. You are free to skip the feature extraction if you have downloaded the test dataset.
-
-- ### Llama3
-
-    - **Common Sense Reasoning:** Config the parameters accordingly in *“machines/llama3/llama3.py”* and run:
-
-        `cd machines/llama3; python llama3.py`
-
-- ### DINOv2
-    - **Semantic Segmentation:** Config the parameters accordingly and run:
-
-        `cd machines/dinov2/; python seg.py`
-
-- ### Stable Diffusion 3
-
-    - **Text-to-Image Synthesis:** Config the parameters accordingly and run:
-
-        `cd machines/sd3/; python sd3.py`
 
 
-## RD_Analysis
-- ### Bpp Computation
+<!-- ## Important Notes
 
-- ### PSNR Computation
-Please note that PSNRs are computed on original RGB images and the reconstructed images, rather than the input and output of the codec. 
+- The current repository is a **research codebase**, not yet a fully packaged toolbox.
+- Several scripts contain **experiment-specific hardcoded paths** and assumptions about dataset layout.
+- Some components depend on **external checkpoints**, dataset annotations, or local VTM binaries that are not bundled here.
+- For reproducibility, it is best to follow the folder naming conventions already used in the code. -->
 
+## Experimental Setting in the Paper
 
-# Related Links
-## Pretrained Codecs
+The paper evaluates DIICM on three machine-vision tasks:
 
-Download from the below links and put them in the corresponding folders. 
-- **Hyperprior:**
-<https://huggingface.co/chansongoal/DT-UFC/tree/main/hyperprior_hybrid>
+- object detection,
+- instance segmentation,
+- person keypoint detection.
 
-- **ELIC:**
-<https://huggingface.co/chansongoal/DT-UFC/tree/main/elic_hybrid>
+It reports results with:
 
-## Pretrained Transform Mapping
-Download from the below links and put them in the corresponding folders. 
+- **JPEG**
+- **Cheng2020**
+- **VVC**
+- **MPEG-VCM**
 
-- **Transform Mapping:**
-<https://huggingface.co/chansongoal/DT-UFC/tree/main/transform_mapping>
+and studies transform coefficients:
 
-## Pretrained Machine Models
+- `alpha = 0.2`
+- `alpha = 0.5`
+- `alpha = 0.8`
 
-Download from the below links and put them in the *“Data_example/model_type/task/pretrained_head”* folder. Please make sure the folder is consistent with the codes.
+The paper also introduces an inverse transform to improve visual quality after decoding.
 
-- **DINOv2 backbone:**
-<https://dl.fbaipublicfiles.com/dinov2/dinov2_vitg14/dinov2_vitg14_pretrain.pth>
+<!-- ## Citation
 
-    - **Classification head:**
-<https://dl.fbaipublicfiles.com/dinov2/dinov2_vitg14/dinov2_vitg14_linear_head.pth>
-
-    - **Segmentation head:**
-<https://dl.fbaipublicfiles.com/dinov2/dinov2_vitg14/dinov2_vitg14_voc2012_linear_head.pth>
-
-    - **Depth estimation head:**
-<https://dl.fbaipublicfiles.com/dinov2/dinov2_vitg14/dinov2_vitg14_nyu_linear4_head.pth>
-
-- **Llama3:**
-<https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct/tree/main>
-
-- **Stable Diffusion 3:**
-<https://huggingface.co/stabilityai/stable-diffusion-3-medium-diffusers/tree/main>
-
-## 📚 Citation
-
-If you use our dataset or evaluation tools, please cite the following paper:
+If you use this repository in your research, please cite the DIICM paper.
 
 ```bibtex
-@inproceedings{gao2025dtufc,
-    author = {Gao, Changsheng and Liu, Zijie and Li, Li and Liu, Dong and Sun, Xiaoyan and Lin, Weisi},
-    title = {{DT-UFC}: Universal Large Model Feature Coding via Peaky-to-Balanced Distribution Transformation},
-    year = {2025},
-    isbn = {9798400720352},
-    publisher = {Association for Computing Machinery},
-    address = {New York, NY, USA},
-    doi = {10.1145/3746027.3755814},
-    booktitle = {Proceedings of the 33rd ACM International Conference on Multimedia},
-    pages = {5198–5207},
-    keywords = {coding for machines, feature coding, large models},
-    location = {Dublin, Ireland},
-    series = {MM '25}
+@article{gao2026diicm,
+  title={DIICM: Discrimination-Inspired Image Coding for Machines},
+  author={Gao, Changsheng and Li, Li and Liu, Dong and Wu, Feng and Ebrahimi, Touradj},
+  journal={IEEE Transactions on Circuits and Systems for Video Technology},
+  year={2026}
 }
+``` -->
+
+## Acknowledgement
+
+This repository builds on widely used research frameworks including Detectron2, CompressAI, and VTM.
