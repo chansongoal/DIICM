@@ -76,6 +76,25 @@ def Faster_Res50_C4(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_net
     print(eval_para)
     os.system(eval_para)
 
+def Faster_Res50_FPN(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_network, processing_config, alpha, quality):
+    NetworkConfig = 'Faster_Res50_FPN'
+    DatasetName = f"{DatasetNamePrefix}_{NetworkConfig}_1.0_{alpha}_quality{quality}"
+    TrainFileName = '/ghome/gaocs/DIICM/machines/detectron2/train_net_backup.py'
+    configFileName = '/ghome/gaocs/DIICM/machines/detectron2/configs/faster_rcnn_R_50_FPN_1x_backup.yaml'
+    JsonName = '/gdata/gaocs/dataset/COCO/json/instances_minVal2014_png.json'
+    ConfigModification(configFileName, DatasetName, LogPath, alpha, quality)
+    train_net_Modification(TrainFileName, DatasetName, JsonName, DatasetPath)
+
+    if processing_config == 'compressed': log_name = f"{LogPath}/{DatasetNamePrefix}_{processing_config}_{NetworkConfig}_quality{quality}.txt 2>&1"
+    elif processing_config == 'transformed_compressed': log_name = f"{LogPath}/{DatasetNamePrefix}_{processing_config}_{mask_type}_{mask_network}_{NetworkConfig}_1.0_{alpha}_quality{quality}.txt 2>&1"
+    eval_para = 'cd /ghome/gaocs/DIICM/machines/detectron2/; \
+                    python3 train_net.py \
+                    --config-file ./configs/faster_rcnn_R_50_FPN_1x.yaml \
+                    --eval-only \
+                    MODEL.WEIGHTS /gdata/gaocs/pretrained_models/detectron2/model_zoo/model_final_280758_FasterRCNN_R50_FPN_3x.pkl ' \
+                    + '>' + log_name
+    print(eval_para)
+    os.system(eval_para)
 
 def Mask_Res50_C4(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_network, processing_config, alpha, quality):
     NetworkConfig = 'Mask_Res50_C4'
@@ -121,9 +140,10 @@ def Keypoints_Res50_FPN(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask
 
 # def eval_all(DatasetNamePrefix, QualityConfig, DatasetPath, LogPath, alpha, quality, mask_type, transform_config):
 def eval_all(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_network, processing_config, alpha, quality):
-    Faster_Res50_C4(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_network, processing_config, alpha, quality)
-    Mask_Res50_C4(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_network, processing_config, alpha, quality)
-    Keypoints_Res50_FPN(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_network, processing_config, alpha, quality)
+    # Faster_Res50_C4(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_network, processing_config, alpha, quality)
+    Faster_Res50_FPN(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_network, processing_config, alpha, quality)
+    # Mask_Res50_C4(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_network, processing_config, alpha, quality)
+    # Keypoints_Res50_FPN(DatasetNamePrefix, DatasetPath, LogPath, mask_type, mask_network, processing_config, alpha, quality)
 
 
 def main(args):
@@ -155,6 +175,12 @@ def main(args):
             elif processing_config == 'transformed_compressed' and arch == 'vtm_anchor':
                 DatasetPath = f"{data_root}/{processing_config}/{arch}/{mask_type}/{mask_network}/1.0_{alpha}/qp{quality}/rec_png"
                 LogPath = f"{data_root}/mAP/{processing_config}/{arch}/{mask_type}/{mask_network}/1.0_{alpha}/qp{quality}"
+            elif processing_config == 'compressed' and arch == 'jpeg_anchor':
+                DatasetPath = f"{data_root}/{processing_config}/{arch}/quality{quality}/rec_jpg"
+                LogPath = f"{data_root}/mAP/{processing_config}/{arch}/quality{quality}"
+            elif processing_config == 'transformed_compressed' and arch == 'jpeg_anchor':
+                DatasetPath = f"{data_root}/{processing_config}/{arch}/{mask_type}/{mask_network}/1.0_{alpha}/quality{quality}/rec_jpg"
+                LogPath = f"{data_root}/mAP/{processing_config}/{arch}/{mask_type}/{mask_network}/1.0_{alpha}/quality{quality}"
 
 
             if not os.path.exists(LogPath): os.makedirs(LogPath, exist_ok=True)

@@ -37,11 +37,11 @@ def get_bpp_mAP(arch, network_idx, alpha_idx):
 
     return bpp, mAP
 
-def plot_figure(pdf_name, fs=24, fs_legend=24, loc='best'):
+def plot_figure(pdf_name, fs=24, fs_legend=24, x_label='bpp', y_label='mAP', loc='best'):
     # fs = 24
     font = {'family': 'Times New Roman', 'weight':'normal', 'size':fs,}
-    plt.ylabel('mAP', font)
-    plt.xlabel('bpp', font)
+    plt.ylabel(y_label, font)
+    plt.xlabel(x_label, font)
     plt.xticks(fontname = 'Times New Roman', weight='ultralight', fontsize=fs)
     plt.yticks(fontname = 'Times New Roman', weight='ultralight', fontsize=fs)
 
@@ -108,7 +108,7 @@ def plot_bpp_IoU_jpeg():
         plt.plot(bpp_5, IoU_5[idx], color='#2ca02c', marker='o', linestyle='-', label=r"$\alpha$=0.5")
         plt.plot(bpp_8, IoU_8[idx], color='#d62728', marker='o', linestyle='-', label=r"$\alpha$=0.8")
         pdf_name = f"bpp_mIoU_jpeg_{config}.pdf"
-        plot_figure(pdf_name)
+        plot_figure(pdf_name, x_label='bpp', y_label='mAP', loc='best')
 
 def plot_bpp_psnr_jpeg():
     # compressed
@@ -129,16 +129,26 @@ def plot_bpp_psnr_jpeg():
                                [0.6768, 24.7307, 19.6313, 20.6383],
                                [0.7861, 25.1023, 19.6996, 20.7396],
                                [0.9077, 25.4301, 19.7623, 20.8311],
-                               [1.0900, 25.9053, 19.8256, 20.9426]]       
-    # transformed_compressed_inv, alpha=0.5
-    transformed_compressed_inv = [[0.1744, 19.2553, 18.7266, 18.9252],
-                                  [0.2915, 23.4521, 23.7429, 23.7061],
-                                  [0.4380, 25.4338, 26.1568, 25.9542],
-                                  [0.5666, 26.5674, 27.3551, 27.1101],
-                                  [0.6768, 27.3666, 28.1600, 27.9002],
-                                  [0.7861, 28.0407, 28.7738, 28.5205],
-                                  [0.9077, 28.6744, 29.3254, 29.0924],
-                                  [1.0900, 29.6507, 30.1468, 29.9513]]
+                               [1.0900, 25.9053, 19.8256, 20.9426]]  
+    # transformed_compressed_inv, alpha=0.5, using the masks inferred from reconstructed images
+    transformed_compressed_inv = [[0.17, 15.26, 17.57, 16.83],
+                                  [0.29, 19.39, 21.72, 20.94],
+                                  [0.44, 22.66, 24.13, 23.68],
+                                  [0.57, 24.12, 25.34, 24.98],
+                                  [0.68, 24.94, 26.12, 25.77],
+                                  [0.79, 25.54, 26.65, 26.33],
+                                  [0.91, 26.10, 27.15, 26.84],
+                                  [1.09, 26.77, 27.84, 27.52]]
+    
+    # # transformed_compressed_inv, alpha=0.5, using the masks inferred from original images
+    # transformed_compressed_inv = [[0.1744, 19.2553, 18.7266, 18.9252],
+    #                               [0.2915, 23.4521, 23.7429, 23.7061],
+    #                               [0.4380, 25.4338, 26.1568, 25.9542],
+    #                               [0.5666, 26.5674, 27.3551, 27.1101],
+    #                               [0.6768, 27.3666, 28.1600, 27.9002],
+    #                               [0.7861, 28.0407, 28.7738, 28.5205],
+    #                               [0.9077, 28.6744, 29.3254, 29.0924],
+    #                               [1.0900, 29.6507, 30.1468, 29.9513]]
     compressed = np.asarray(compressed)
     transformed_compressed = np.asarray(transformed_compressed)
     transformed_compressed_inv = np.asarray(transformed_compressed_inv)
@@ -151,7 +161,87 @@ def plot_bpp_psnr_jpeg():
         plt.plot(transformed_compressed_inv[:,0], transformed_compressed_inv[:,idx+1], color='b', marker='o', linestyle='-', label=r"DIICM-Inv")
 
         pdf_name = f"bpp_psnr_jpeg_{config}_{alpha}.pdf"
-        plot_figure(pdf_name, 24, 18, 'best')
+        plot_figure(pdf_name, 24, 18, x_label='bpp', y_label='PSNR', loc='best')
+
+def plot_bpp_psnr_vtm():
+    # compressed
+    compressed = [[0.03, 21.20, 23.94, 23.04],
+                  [0.06, 23.11, 25.62, 24.75],
+                  [0.13, 25.81, 27.95, 27.16],
+                  [0.29, 28.68, 30.48, 29.80],
+                  [0.58, 31.71, 33.23, 32.67],
+                  [1.09, 35.01, 36.24, 35.82]]
+
+    # transformed_compressed, alpha=0.5, (bpp, fore_psnr, back_psnr, overall_psnr)
+    transformed_compressed = [[0.02, 20.10, 18.25, 18.74],
+                              [0.04, 21.56, 18.66, 19.34],
+                              [0.08, 23.42, 19.10, 19.99],
+                              [0.18, 25.10, 19.47, 20.52],
+                              [0.38, 26.50, 19.75, 20.92],
+                              [0.75, 27.58, 19.94, 21.19]]
+      
+    # transformed_compressed_inv, alpha=0.5
+    transformed_compressed_inv = [[0.02, 18.05, 20.51, 19.78],
+                                  [0.04, 20.03, 21.84, 21.31],
+                                  [0.08, 22.54, 23.55, 23.21],
+                                  [0.18, 25.01, 25.44, 25.23],
+                                  [0.38, 27.21, 27.43, 27.28],
+                                  [0.75, 29.05, 29.40, 29.23]]
+
+    compressed = np.asarray(compressed)
+    transformed_compressed = np.asarray(transformed_compressed)
+    transformed_compressed_inv = np.asarray(transformed_compressed_inv)
+
+    alpha = 0.5
+    config_all = ['fore', 'back', 'overall']
+    for idx, config in enumerate(config_all):
+        plt.plot(compressed[:,0], compressed[:,idx+1], color='m', marker='o', linestyle='-', label=r"VTM")
+        plt.plot(transformed_compressed[:,0], transformed_compressed[:,idx+1], color='c', marker='o', linestyle='-', label=r"DIICM")
+        plt.plot(transformed_compressed_inv[:,0], transformed_compressed_inv[:,idx+1], color='b', marker='o', linestyle='-', label=r"DIICM-Inv")
+
+        pdf_name = f"bpp_psnr_vtm_{config}_{alpha}.pdf"
+        plot_figure(pdf_name, 24, 18, x_label='bpp', y_label='PSNR', loc='best')
+
+def plot_bpp_psnr_cheng2020():
+    # compressed
+    compressed = [[0.16, 26.21, 28.17, 27.46],
+                  [0.24, 27.46, 29.30, 28.61],
+                  [0.33, 28.53, 30.29, 29.62],
+                  [0.53, 30.57, 32.17, 31.57],
+                  [0.73, 31.77, 33.30, 32.72],
+                  [0.97, 32.80, 34.29, 33.70]]
+
+    # transformed_compressed, alpha=0.5, (bpp, fore_psnr, back_psnr, overall_psnr)
+    transformed_compressed = [[0.10, 23.63, 19.16, 20.08],
+                              [0.15, 24.40, 19.35, 20.35],
+                              [0.22, 25.01, 19.51, 20.56],
+                              [0.36, 26.03, 19.71, 20.84],
+                              [0.52, 26.54, 19.82, 20.99],
+                              [0.71, 26.91, 19.89, 21.10]]
+
+      
+    # transformed_compressed_inv, alpha=0.5
+    transformed_compressed_inv = [[0.10, 22.99, 23.73, 23.50],
+                                  [0.15, 24.06, 24.64, 24.43],
+                                  [0.22, 24.97, 25.61, 25.38],
+                                  [0.36, 26.48, 26.87, 26.70],
+                                  [0.52, 27.34, 27.92, 27.70],
+                                  [0.71, 28.00, 28.85, 28.56]]
+
+
+    compressed = np.asarray(compressed)
+    transformed_compressed = np.asarray(transformed_compressed)
+    transformed_compressed_inv = np.asarray(transformed_compressed_inv)
+
+    alpha = 0.5
+    config_all = ['fore', 'back', 'overall']
+    for idx, config in enumerate(config_all):
+        plt.plot(compressed[:,0], compressed[:,idx+1], color='m', marker='o', linestyle='-', label=r"Cheng2020")
+        plt.plot(transformed_compressed[:,0], transformed_compressed[:,idx+1], color='c', marker='o', linestyle='-', label=r"DIICM")
+        plt.plot(transformed_compressed_inv[:,0], transformed_compressed_inv[:,idx+1], color='b', marker='o', linestyle='-', label=r"DIICM-Inv")
+
+        pdf_name = f"bpp_psnr_cheng2020_{config}_{alpha}.pdf"
+        plot_figure(pdf_name, 24, 18, x_label='bpp', y_label='PSNR', loc='best')
 
 def plot_bpp_mAP_jpeg():
     # MaskRCNN_Res_C4, (bpp, 0.2, 0.5, 0.8)
@@ -195,10 +285,10 @@ def plot_bpp_mAP_jpeg():
         plt.plot(transformed_compressed_label[:,0], transformed_compressed_label[:,idx+1], color='b', marker='o', linestyle='-', label=r"DIICM-GT")
 
         pdf_name = f"bpp_mAP_ablation_jpeg_segmentation_{alpha}.pdf"
-        plot_figure(pdf_name, 24, 22, 'best')
+        plot_figure(pdf_name, 24, 22, x_label='bpp', y_label='mAP', loc='best')
 
 if __name__ == '__main__':
     # plot_bpp_mAP()
     # plot_bpp_IoU_jpeg()
-    # plot_bpp_psnr_jpeg()
-    plot_bpp_mAP_jpeg()
+    plot_bpp_psnr_jpeg()
+    # plot_bpp_mAP_jpeg()

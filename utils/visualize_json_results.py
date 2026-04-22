@@ -14,7 +14,6 @@ from detectron2.structures import Boxes, BoxMode, Instances
 # from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 # from detectron2.utils.visualizer import Visualizer
-# import visualizer
 from visualizer import Visualizer
 from PIL import Image
 
@@ -85,7 +84,7 @@ if __name__ == "__main__":
 
     for dic in tqdm.tqdm(dicts):
         # print(dic)
-        filename = '/data/gaocs/Understanding_Detection/minVal2014/' + dic["file_name"].split('/')[-1]
+        filename = '/gdata/gaocs/dataset/COCO/minVal2014/' + dic["file_name"].split('/')[-1]
         img = cv2.imread(filename, cv2.IMREAD_COLOR)[:, :, ::-1]
         basename = os.path.basename(dic["file_name"][:-4]+'.png')
 
